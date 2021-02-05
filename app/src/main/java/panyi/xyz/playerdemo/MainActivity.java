@@ -10,10 +10,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.widget.Button;
 
+import java.io.File;
 import java.util.List;
 import me.rosuh.filepicker.config.FilePickerManager;
 
 public class MainActivity extends AppCompatActivity {
+
+    boolean created = false;
+
+    static boolean isPlayingAsset = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,8 +26,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         findViewById(R.id.select_file_btn).setOnClickListener((v)->{
-            //selectFile();
-            playMusic();
+            selectFile();
+            //playMusic();
         });
 
         Button btn = findViewById(R.id.select_file_btn);
@@ -42,8 +47,13 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    void playMusic(){
+    void playMusic(String filepath){
+        created = SimplePlayerBridge.createAssetAudioPlayer(filepath , new File(filepath).length());
 
+        if (created) {
+            isPlayingAsset = !isPlayingAsset;
+            SimplePlayerBridge.setPlayingAssetAudioPlayer(isPlayingAsset);
+        }
     }
 
 
@@ -66,6 +76,7 @@ public class MainActivity extends AppCompatActivity {
             if (paths != null && paths.size() > 0) {
                 final String filePath = paths.get(0);
                 System.out.println("filepath = " + filePath);
+                playMusic(filePath);
             }
         }
     }

@@ -21,7 +21,7 @@ public class SimplePlayerBridge {
 
     public static native void createBufferQueueAudioPlayer(int sampleRate, int samplesPerBuf);
 
-    public static native void createAssetAudioPlayer(AssetManager assetManager, String filename);
+    public static native boolean createAssetAudioPlayer(String filename , long filesize);
 
     public static native void setPlayingAssetAudioPlayer(boolean isPlaying);
 }

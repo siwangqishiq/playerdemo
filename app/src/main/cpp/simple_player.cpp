@@ -1,6 +1,7 @@
 #include "simple_player.h"
 #include <assert.h>
 #include <pthread.h>
+#include <stdio.h>
 
 // for native audio
 #include <SLES/OpenSLES.h>
@@ -27,6 +28,7 @@ static SLSeekItf fdPlayerSeek;
 static SLMuteSoloItf fdPlayerMuteSolo;
 static SLVolumeItf fdPlayerVolume;
 
+extern "C" void freeFdPlayerObject();
 
 extern "C" JNIEXPORT
 jstring JNICALL
@@ -94,10 +96,10 @@ Java_panyi_xyz_playerdemo_SimplePlayerBridge_createBufferQueueAudioPlayer(JNIEnv
 
 
 extern "C"
-JNIEXPORT void JNICALL
+JNIEXPORT jboolean JNICALL
 Java_panyi_xyz_playerdemo_SimplePlayerBridge_createAssetAudioPlayer(JNIEnv *env, jclass clazz,
-                                                                    jobject asset_manager,
-                                                                    jstring filename) {
+                                                                    jstring filename , jlong size) {
+    freeFdPlayerObject();
     SLresult result;
 
     // convert Java string to UTF-8
@@ -105,28 +107,30 @@ Java_panyi_xyz_playerdemo_SimplePlayerBridge_createAssetAudioPlayer(JNIEnv *env,
     assert(nullptr != utf8);
 
     // use asset manager to open asset by filename
-    AAssetManager* mgr = AAssetManager_fromJava(env, asset_manager);
-    assert(nullptr != mgr);
-    AAsset* asset = AAssetManager_open(mgr, utf8, AASSET_MODE_UNKNOWN);
-
-    // release the Java string and UTF-8
-    (env)->ReleaseStringUTFChars(filename, utf8);
+//    AAssetManager* mgr = AAssetManager_fromJava(env, asset_manager);
+//    assert(nullptr != mgr);
+    //AAsset* asset = AAssetManager_open(mgr, utf8, AASSET_MODE_UNKNOWN);
 
     // the asset might not be found
-    if (nullptr == asset) {
-        return;
-    }
+//    if (nullptr == asset) {
+//        return JNI_FALSE;
+//    }
 
     // open asset as file descriptor
-    off_t start, length;
-    int fd = AAsset_openFileDescriptor(asset, &start, &length);
-    assert(0 <= fd);
-    AAsset_close(asset);
+//    off_t start, length;
+//    int fd = AAsset_openFileDescriptor(asset, &start, &length);
+//    assert(0 <= fd);
+//    AAsset_close(asset);
 
     // configure audio source
-    SLDataLocator_AndroidFD loc_fd = {SL_DATALOCATOR_ANDROIDFD, fd, start, length};
+//    SLDataLocator_AndroidFD loc_fd = {SL_DATALOCATOR_ANDROIDFD, fd, start, length};
+//    SLDataFormat_MIME format_mime = {SL_DATAFORMAT_MIME, NULL, SL_CONTAINERTYPE_UNSPECIFIED};
+//    SLDataSource audioSrc = {&loc_fd, &format_mime};
+
+    SLDataLocator_URI uri = {SL_DATALOCATOR_URI , (SLchar *)utf8};
+//    SLDataLocator_Address address = {SL_DATALOCATOR_ADDRESS , (void *)utf8 , (SLuint32)size};
     SLDataFormat_MIME format_mime = {SL_DATAFORMAT_MIME, NULL, SL_CONTAINERTYPE_UNSPECIFIED};
-    SLDataSource audioSrc = {&loc_fd, &format_mime};
+    SLDataSource audioSrc = {&uri, &format_mime};
 
     // configure audio sink
     SLDataLocator_OutputMix loc_outmix = {SL_DATALOCATOR_OUTPUTMIX, outputMixObject};
@@ -167,6 +171,11 @@ Java_panyi_xyz_playerdemo_SimplePlayerBridge_createAssetAudioPlayer(JNIEnv *env,
     // enable whole file looping
     result = (*fdPlayerSeek)->SetLoop(fdPlayerSeek, SL_BOOLEAN_TRUE, 0, SL_TIME_UNKNOWN);
     assert(SL_RESULT_SUCCESS == result);
+
+    // release the Java string and UTF-8
+    (env)->ReleaseStringUTFChars(filename, utf8);
+
+    return JNI_TRUE;
 }
 
 void freeFdPlayerObject(){
